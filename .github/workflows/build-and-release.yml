@@ -1,17 +1,15 @@
-name: Build and Release Signed APK
+name: Build, Test & Release Android APK
 
 on:
   push:
     branches:
       - master
-    paths-ignore:
-      - 'README.md'
-      - 'CHANGELOG.md'
-      - 'LICENSE'
-      - '.gitignore'
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  build-and-release:
+  build-and-test:
     runs-on: ubuntu-latest
     
     steps:
@@ -27,6 +25,39 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Run linter
+        run: ./gradlew lint
+
+      - name: Run unit tests
+        run: ./gradlew test
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+  build-release:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: Extract version and changelog
         id: version
         run: |
@@ -39,33 +70,43 @@ jobs:
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not extract version from app/build.gradle.kts"
+            exit 1
+          fi
+          echo "✅ Extracted version: $VERSION"
 
       - name: Create keystore file
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > keystore.jks
-          ls -la keystore.jks
-
-      - name: Build signed APK
-        run: |
-          # Make sure gradlew exists and is executable
-          if [ ! -f "gradlew" ]; then
-            echo "Error: gradlew script not found in repository root"
+          if [ ! -f keystore.jks ]; then
+            echo "Error: Failed to create keystore"
             exit 1
           fi
-          chmod +x gradlew
+          echo "✅ Keystore created successfully"
+
+      - name: Build signed release APK
+        run: |
           ./gradlew clean assembleRelease \
             -Pandroid.injected.signing.store.file=keystore.jks \
-            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Find APK file
+      - name: Find and verify APK
         id: apk
         run: |
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: APK not found after build!"
+            exit 1
+          fi
           APK_NAME=$(basename "$APK_PATH")
+          APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "✅ APK found: $APK_NAME ($APK_SIZE)"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -90,6 +131,7 @@ jobs:
             ${{ steps.apk.outputs.apk_path }}
           draft: false
           prerelease: false
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -97,17 +139,18 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: signed-apk
+          name: signed-apk-${{ steps.version.outputs.version }}
           path: ${{ steps.apk.outputs.apk_path }}
           retention-days: 30
 
-      - name: Build status notification
+      - name: Build completion notification
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "✅ Build and release completed successfully!"
             echo "📦 APK: ${{ steps.apk.outputs.apk_name }}"
             echo "🏷️  Version: v${{ steps.version.outputs.version }}"
+            echo "🔗 Release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}"
           else
-            echo "❌ Build failed!"
+            echo "❌ Build or release failed!"
           fi
