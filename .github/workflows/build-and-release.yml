@@ -41,6 +41,9 @@ jobs:
     needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
     
     steps:
       - name: Checkout code
@@ -119,6 +122,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: success()
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           body: |
@@ -138,9 +142,6 @@ jobs:
             ${{ steps.apk.outputs.apk_path }}
           draft: false
           prerelease: false
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK to artifact
         uses: actions/upload-artifact@v4
