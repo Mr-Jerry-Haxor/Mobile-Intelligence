@@ -79,8 +79,8 @@ jobs:
 
       - name: Create keystore file
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > keystore.jks
-          if [ ! -f keystore.jks ]; then
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > app/keystore.jks
+          if [ ! -f app/keystore.jks ]; then
             echo "Error: Failed to create keystore"
             exit 1
           fi
@@ -89,7 +89,7 @@ jobs:
       - name: Build signed release APK
         run: |
           ./gradlew clean assembleRelease \
-            -Pandroid.injected.signing.store.file=keystore.jks \
+            -Pandroid.injected.signing.store.file=app/keystore.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
@@ -107,6 +107,12 @@ jobs:
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
           echo "✅ APK found: $APK_NAME ($APK_SIZE)"
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: |
+          rm -f app/keystore.jks
+          echo "✅ Keystore cleaned up"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
