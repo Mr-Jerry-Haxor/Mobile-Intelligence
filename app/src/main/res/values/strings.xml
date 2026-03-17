@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Mobile Intelligence</string>
+
+    <!-- DNS Firewall -->
+    <string name="dns_protection">Network Protection</string>
+    <string name="dns_vpn_enabled">DNS Protection Active</string>
+    <string name="dns_vpn_disabled">DNS Protection Off</string>
+    <string name="dns_total_queries">Total Queries</string>
+    <string name="dns_blocked_queries">Blocked</string>
+    <string name="dns_cached_queries">Cached</string>
+    <string name="dns_avg_response">Avg Response</string>
+    <string name="dns_query_log">Query Log</string>
+    <string name="dns_statistics">Statistics</string>
+    <string name="dns_settings">DNS Settings</string>
+    <string name="dns_notification_channel">DNS Protection</string>
+    <string name="dns_notification_title">DNS Firewall Active</string>
+    <string name="dns_notification_text">Filtering DNS queries locally</string>
+    <string name="dns_block_mode_nxdomain">NXDOMAIN</string>
+    <string name="dns_block_mode_zero">0.0.0.0</string>
+    <string name="dns_provider_cloudflare">Cloudflare (1.1.1.1)</string>
+    <string name="dns_provider_google">Google (8.8.8.8)</string>
+    <string name="dns_provider_quad9">Quad9 (9.9.9.9)</string>
+    <string name="dns_provider_custom">Custom</string>
+    <string name="dns_category_ads">Ads</string>
+    <string name="dns_category_trackers">Trackers</string>
+    <string name="dns_category_malware">Malware</string>
+    <string name="dns_clear_data_title">Clear DNS Data</string>
+    <string name="dns_clear_data_message">This will permanently delete all query logs and statistics.</string>
+</resources>

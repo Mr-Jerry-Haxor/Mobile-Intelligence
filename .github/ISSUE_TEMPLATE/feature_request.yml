@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest an enhancement
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user problem are you trying to solve?
+      placeholder: It is difficult to ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: I suggest adding ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: I also considered ...
+  - type: textarea
+    id: impact
+    attributes:
+      label: Privacy/permission impact
+      description: Mention if this changes data collection, permissions, or exported components.
