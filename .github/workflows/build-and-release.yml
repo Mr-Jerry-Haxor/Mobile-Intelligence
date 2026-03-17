@@ -47,6 +47,11 @@ jobs:
 
       - name: Build signed APK
         run: |
+          # Make sure gradlew exists and is executable
+          if [ ! -f "gradlew" ]; then
+            echo "Error: gradlew script not found in repository root"
+            exit 1
+          fi
           chmod +x gradlew
           ./gradlew clean assembleRelease \
             -Pandroid.injected.signing.store.file=keystore.jks \
